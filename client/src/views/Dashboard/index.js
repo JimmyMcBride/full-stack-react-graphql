@@ -13,6 +13,14 @@ export default function Dashboard() {
           query={gql`
             {
               hello
+              users {
+                id
+                username
+                posts {
+                  title
+                  body
+                }
+              }
             }
           `}
         >
@@ -20,8 +28,19 @@ export default function Dashboard() {
             console.log(data);
             return (
               <Card invert>
-                <h6>A message from GraphQL to you!</h6>
+                <h3>A message from GraphQL to you!</h3>
                 <strong>{data?.hello}</strong>
+                {data?.users?.map(item => (
+                  <Card stretch>
+                    <h3>{item.username}</h3>
+                    {item?.posts?.map(item => (
+                      <Card invert stretch>
+                        <h6>{item.title}</h6>
+                        <p>{item.body}</p>
+                      </Card>
+                    ))}
+                  </Card>
+                ))}
               </Card>
             );
           }}
