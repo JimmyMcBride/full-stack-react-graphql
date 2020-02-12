@@ -8,18 +8,21 @@ const typeDefs = gql`
     Hello(name: String!): String!
     Users: [User!]!
     User(id: ID!): User
+    Posts: [Post]
+    UserPosts(user_id: ID!): [Post]
+    Post(id: ID!): Post!
   }
   type User {
     id: ID!
     username: String!
-    posts: [Post]
+    posts: [Post!]
     firstLetterOfUserName: String
   }
   type Post {
     id: ID!
-    title: String!
-    body: String!
-    author: String
+    title: String
+    body: String
+    author: User
   }
   type Error {
     field: String!
@@ -29,15 +32,19 @@ const typeDefs = gql`
     Errors: [Error]
     Users: [User!]!
   }
+  type PostResponse {
+    Posts: [Post!]
+  }
   input UserCreds {
     id: ID!
     username: String!
-    password: String!
+    password: String
     age: Int
   }
   type Mutation {
     register(creds: UserCreds!): RegisterResponse!
     login(creds: UserCreds!): String!
+    addPost(id: ID!, title: String!, body: String!, author_id: ID!): Post!
   }
   type Subscription {
     newUser: User!
@@ -45,39 +52,42 @@ const typeDefs = gql`
 `;
 
 const NEW_USER = "NEW_USER";
+const NEW_POST = "NEW_POST";
 
 users = [
   {
     id: 1,
-    username: "FireNinja",
-    posts: [
-      {
-        id: 1,
-        title: "My Cool Hammer",
-        body: "Can't touch this!"
-      },
-      {
-        id: 2,
-        title: "Madonna",
-        body: "Papa don't preach, I'm keeping my Apollo server!"
-      }
-    ]
+    username: "FireNinja"
   },
   {
     id: 2,
-    username: "BillyTheKid",
-    posts: [
-      {
-        id: 1,
-        title: "Fergalicious",
-        body:
-          "You can look at my data, but you can't touch it! You don't want no drama. No, no, no drama."
-      }
-    ]
+    username: "BillyTheKid"
   },
   {
     id: 3,
     username: "GeorgieBoi"
+  }
+];
+
+POSTS = [
+  {
+    id: 1,
+    title: "My Cool Hammer",
+    body: "Can't touch this!",
+    author: users[0]
+  },
+  {
+    id: 2,
+    title: "Madonna",
+    body: "Papa don't preach, I'm keeping my Apollo server!",
+    author: users[0]
+  },
+  {
+    id: 3,
+    title: "Fergalicious",
+    body:
+      "You can look at my data, but you can't touch it! You don't want no drama. No, no, no drama.",
+    author: users[1]
   }
 ];
 
@@ -102,9 +112,28 @@ const resolvers = {
     },
     Users: () => [...users],
     // User: (parent, { id }) => User.find(user => user.id === id)
-    User: (parent, { id }) => users.find(user => user.id == id)
+    User: (parent, { id }) => users.find(user => user.id == id),
+    Posts: () => POSTS,
+    UserPosts: (_, { user_id }) =>
+      POSTS.filter(post => post.author.id == user_id),
+    Post: (_, { id }) => POSTS.find(post => post.id == id)
   },
   Mutation: {
+    addPost: (_, { id, title, body, author_id }, { pubsub }) => {
+      USER = users.find(user => user.id == author_id);
+      const newPost = {
+        id: id,
+        title: title,
+        body: body,
+        author: USER
+      };
+      pubsub.publish(NEW_POST, {
+        newPost: newPost
+      });
+      POSTS.push(newPost);
+      console.log(POSTS);
+      return newPost;
+    },
     login: async (parent, { creds: { username } }, context, info) => {
       console.log(context);
       return username;
@@ -119,13 +148,13 @@ const resolvers = {
         newUser: user
       });
       return {
-        errors: [
+        Errors: [
           {
             field: "username",
             message: "Not formated properly."
           }
         ],
-        Users: [...users, user]
+        Users: [...users]
       };
     }
   }

@@ -1,6 +1,8 @@
-import React from "react";
+import React, { useEffect } from "react";
 
 import { Wrapper, Card, Linkton } from "bushido-strap";
+
+import Loading from "../../components/Loading";
 
 import { useQuery } from "@apollo/react-hooks";
 import gql from "graphql-tag";
@@ -22,15 +24,19 @@ const HELLO_WORLD = gql`
 
 export default function Dashboard() {
   const { loading, data } = useQuery(HELLO_WORLD);
-  if (loading) return <p>Loading ...</p>;
+  useEffect(() => {}, []);
+  if (loading) return <Loading />;
   console.log(data);
   return (
     <Wrapper jc_center>
       <Card>
         <Card invert>
           <Linkton to="/register" stretch="true" purple="true">
-            Go here
+            Register here
           </Linkton>
+          {/* <Linkton to="/users" stretch="true" pink="true">
+            View users here
+          </Linkton> */}
           <h3>A message from GraphQL to you!</h3>
           <strong>{data?.Hello}</strong>
           {data?.Users?.map(item => (

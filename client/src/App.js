@@ -9,6 +9,7 @@ import { AppWrapper } from "bushido-strap";
 // Importing all routes
 import Dashboard from "./views/Dashboard";
 import Register from "./views/Register";
+import Users from "./views/Users";
 
 // Using Web Font Loader for google fonts
 import WebFont from "webfontloader";
@@ -29,6 +30,7 @@ export default function App() {
     <AppWrapper head_font={h_font} font={r_font}>
       <Route path="/" exact component={Dashboard} />
       <Route path="/register" exact component={Register} />
+      <Route path="/users" exact component={Users} />
     </AppWrapper>
   );
 }
