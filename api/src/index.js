@@ -5,16 +5,13 @@ const { ApolloServer, gql, PubSub } = require("apollo-server");
 // typeDefs is where we define our query types
 const typeDefs = gql`
   type Query {
-    hello(name: String!): String!
-    users: [User!]!
-  }
-  type Error {
-    field: String!
-    message: String!
+    Hello(name: String!): String!
+    Users: [User!]!
+    User(id: ID!): User
   }
   type User {
     id: ID!
-    username: String
+    username: String!
     posts: [Post]
     firstLetterOfUserName: String
   }
@@ -22,10 +19,15 @@ const typeDefs = gql`
     id: ID!
     title: String!
     body: String!
+    author: String
+  }
+  type Error {
+    field: String!
+    message: String!
   }
   type RegisterResponse {
-    errors: [Error]
-    users: [User!]!
+    Errors: [Error]
+    Users: [User!]!
   }
   input UserCreds {
     id: ID!
@@ -44,6 +46,41 @@ const typeDefs = gql`
 
 const NEW_USER = "NEW_USER";
 
+users = [
+  {
+    id: 1,
+    username: "FireNinja",
+    posts: [
+      {
+        id: 1,
+        title: "My Cool Hammer",
+        body: "Can't touch this!"
+      },
+      {
+        id: 2,
+        title: "Madonna",
+        body: "Papa don't preach, I'm keeping my Apollo server!"
+      }
+    ]
+  },
+  {
+    id: 2,
+    username: "BillyTheKid",
+    posts: [
+      {
+        id: 1,
+        title: "Fergalicious",
+        body:
+          "You can look at my data, but you can't touch it! You don't want no drama. No, no, no drama."
+      }
+    ]
+  },
+  {
+    id: 3,
+    username: "GeorgieBoi"
+  }
+];
+
 /* resolvers is where we can essentially seed information 
 that we defined in our typeDefs */
 const resolvers = {
@@ -56,49 +93,16 @@ const resolvers = {
     firstLetterOfUserName: parent => {
       return parent.username ? parent.username[0] : null;
     },
-    username: parent => parent.username
+    username: parent => parent.username,
+    id: parent => parent.id
   },
   Query: {
-    hello: (parent, { name }) => {
+    Hello: (parent, { name }) => {
       return `Hello, ${name}!`;
     },
-    users: () => [
-      {
-        id: 1,
-        username: "FireNinja",
-        posts: [
-          {
-            id: 1,
-            title: "My Cool Hammer",
-            body: "Can't touch this!"
-          },
-          {
-            id: 2,
-            title: "Madonna",
-            body: "Papa don't preach, I'm keeping my Apollo server!"
-          }
-        ]
-      },
-      {
-        id: 2,
-        username: "BillyTheKid",
-        posts: [
-          {
-            id: 1,
-            title: "Fergalicious",
-            body:
-              "You can look at my data, but you can't touch it! You don't want no drama. No, no, no drama."
-          }
-        ]
-      },
-      {
-        id: 3,
-        username: "GeorgieBoi"
-      },
-      {
-        id: 4
-      }
-    ]
+    Users: () => [...users],
+    // User: (parent, { id }) => User.find(user => user.id === id)
+    User: (parent, { id }) => users.find(user => user.id == id)
   },
   Mutation: {
     login: async (parent, { creds: { username } }, context, info) => {
@@ -107,9 +111,10 @@ const resolvers = {
     },
     register: (_, { creds: { id, username } }, { pubsub }) => {
       const user = {
-        id,
-        username
+        id: id,
+        username: username
       };
+      users.push(user);
       pubsub.publish(NEW_USER, {
         newUser: user
       });
@@ -120,13 +125,7 @@ const resolvers = {
             message: "Not formated properly."
           }
         ],
-        users: [
-          // {
-          //   id: 1,
-          //   username: "FireNinja"
-          // }
-          user
-        ]
+        Users: [...users, user]
       };
     }
   }
