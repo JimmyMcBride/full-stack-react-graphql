@@ -1,6 +1,6 @@
 import React from "react";
 
-import { Wrapper, Card } from "bushido-strap";
+import { Wrapper, Card, Linkton } from "bushido-strap";
 
 import { Query } from "react-apollo";
 import gql from "graphql-tag";
@@ -12,11 +12,12 @@ export default function Dashboard() {
         <Query
           query={gql`
             {
-              hello
+              hello(name: "world")
               users {
                 id
                 username
                 posts {
+                  id
                   title
                   body
                 }
@@ -28,13 +29,16 @@ export default function Dashboard() {
             console.log(data);
             return (
               <Card invert>
+                <Linkton to="/" stretch="true" purple="true">
+                  Go here
+                </Linkton>
                 <h3>A message from GraphQL to you!</h3>
                 <strong>{data?.hello}</strong>
                 {data?.users?.map(item => (
-                  <Card stretch>
+                  <Card stretch key={item.id}>
                     <h3>{item.username}</h3>
                     {item?.posts?.map(item => (
-                      <Card invert stretch>
+                      <Card invert stretch key={item.id}>
                         <h6>{item.title}</h6>
                         <p>{item.body}</p>
                       </Card>
